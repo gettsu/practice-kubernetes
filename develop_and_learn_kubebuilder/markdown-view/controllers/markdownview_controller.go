@@ -18,7 +18,11 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
+    corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,4 +63,33 @@ func (r *MarkdownViewReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&viewv1.MarkdownView{}).
 		Complete(r)
+}
+
+//! [get]
+func (r *MarkdownViewReconciler) Reconcile_get(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    var deployment appsv1.Deployment
+    err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &deployment)
+    if err != nil {
+        return ctrl.Result{}, err
+    }
+    fmt.Printf("Got Deployment: %#v\n", deployment)
+    return ctrl.Result{}, nil
+}
+
+//! [get]
+
+//! [list]
+func (r *MarkdownViewReconciler) Reconcile_list(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    var services corev1.ServiceList
+    err := r.List(ctx, &services, &client.ListOptions{
+        Namespace: "default",
+        LabelSelector: labels.SelectorFromSet(map[string]string{"app": "sample"}),
+    })
+    if err != nil {
+        return ctrl.Result{}, err
+    }
+    for _, svc := range services.Items {
+        fmt.Println(svc.Name)
+    }
+    return ctrl.Result{}, nil
 }
