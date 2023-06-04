@@ -21,11 +21,15 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
-    corev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	viewv1 "gettsu/markdown-view/api/v1"
@@ -65,31 +69,119 @@ func (r *MarkdownViewReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-//! [get]
+// ! [get]
 func (r *MarkdownViewReconciler) Reconcile_get(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    var deployment appsv1.Deployment
-    err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &deployment)
-    if err != nil {
-        return ctrl.Result{}, err
-    }
-    fmt.Printf("Got Deployment: %#v\n", deployment)
-    return ctrl.Result{}, nil
+	var deployment appsv1.Deployment
+	err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &deployment)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	fmt.Printf("Got Deployment: %#v\n", deployment)
+	return ctrl.Result{}, nil
 }
 
 //! [get]
 
-//! [list]
+// ! [list]
 func (r *MarkdownViewReconciler) Reconcile_list(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-    var services corev1.ServiceList
-    err := r.List(ctx, &services, &client.ListOptions{
-        Namespace: "default",
-        LabelSelector: labels.SelectorFromSet(map[string]string{"app": "sample"}),
-    })
-    if err != nil {
-        return ctrl.Result{}, err
-    }
-    for _, svc := range services.Items {
-        fmt.Println(svc.Name)
-    }
-    return ctrl.Result{}, nil
+	var services corev1.ServiceList
+	err := r.List(ctx, &services, &client.ListOptions{
+		Namespace:     "default",
+		LabelSelector: labels.SelectorFromSet(map[string]string{"app": "sample"}),
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	for _, svc := range services.Items {
+		fmt.Println(svc.Name)
+	}
+	return ctrl.Result{}, nil
+}
+
+// ! [pagination]
+func (r *MarkdownViewReconciler) Reconciler_pagination(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	token := ""
+	for i := 0; ; i++ {
+		var services corev1.ServiceList
+		err := r.List(ctx, &services, &client.ListOptions{
+			Limit:    3,
+			Continue: token,
+		})
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		fmt.Printf("Page %d:\n", i)
+		for _, svc := range services.Items {
+			fmt.Println(svc.Name)
+		}
+		fmt.Println()
+
+		token = services.ListMeta.Continue
+		if len(token) == 0 {
+			return ctrl.Result{}, nil
+		}
+	}
+}
+
+// ! [create]
+func (r *MarkdownViewReconciler) Reconcile_create(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	dep := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sample",
+			Namespace: "default",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: pointer.Int32Ptr(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "nginx"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "nginx"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := r.Create(ctx, &dep)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, nil
+}
+
+func (r *MarkdownViewReconciler) Reconcile_createOrUpdate(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	svc := &corev1.Service{}
+	svc.SetNamespace("default")
+	svc.SetName("sample")
+
+	op, err := ctrl.CreateOrUpdate(ctx, r.Client, svc, func() error {
+		svc.Spec.Type = corev1.ServiceTypeClusterIP
+		svc.Spec.Selector = map[string]string{"app": "nginx"}
+		svc.Spec.Ports = []corev1.ServicePort{
+			{
+				Name:       "http",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       80,
+				TargetPort: intstr.FromInt(80),
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if op != controllerutil.OperationResultNone {
+		fmt.Printf("Deployment %s\n", op)
+	}
+	return ctrl.Result{}, nil
 }

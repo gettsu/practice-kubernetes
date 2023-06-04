@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -29,28 +28,28 @@ type MarkdownViewSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-    //+kubebuilder:validation:Required
-    //+kubebuilder:validation:MinProperties=1
-    Markdowns map[string] string `json:"markdown,omitempty"`
+	//+kubebuilder:validation:Required
+	//+kubebuilder:validation:MinProperties=1
+	Markdowns map[string]string `json:"markdown,omitempty"`
 
-    // Replicas is the number of viewers.
-    // +kubebuilder:default=1
-    // +optional
-    Replicas int32 `json:"replicas,omitempty"`
+	// Replicas is the number of viewers.
+	// +kubebuilder:default=1
+	// +optional
+	Replicas int32 `json:"replicas,omitempty"`
 
-    //ViewerImage is the image name of the viewer
-    //+optional
-    ViewerImage string `json:"viewerImage,omitempty"`
+	//ViewerImage is the image name of the viewer
+	//+optional
+	ViewerImage string `json:"viewerImage,omitempty"`
 }
 
 // MarkdownViewStatus defines the observed state of MarkdownView
-//+kubebuilder:validation:Enum=NotReady;Available;Healthy
+// +kubebuilder:validation:Enum=NotReady;Available;Healthy
 type MarkdownViewStatus string
 
 const (
-    MarkdownViewNotReady = MarkdownViewStatus("NotReady")
-    MarkdownviewAvailable = MarkdownViewStatus("Available")
-    MarkdownViewHealthy = MarkdownViewStatus("Healthy")
+	MarkdownViewNotReady  = MarkdownViewStatus("NotReady")
+	MarkdownviewAvailable = MarkdownViewStatus("Available")
+	MarkdownViewHealthy   = MarkdownViewStatus("Healthy")
 )
 
 //+kubebuilder:object:root=true
