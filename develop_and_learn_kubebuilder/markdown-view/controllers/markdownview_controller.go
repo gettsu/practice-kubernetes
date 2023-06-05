@@ -295,3 +295,38 @@ func (r *MarkdownViewReconciler) Reconcile_patchApplyConfig(ctx context.Context,
 	})
 	return ctrl.Result{}, err
 }
+
+func (r MarkdownViewReconciler) updateStatus(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var dep appsv1.Deployment
+	err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &dep)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	dep.Status.AvailableReplicas = 3
+	err = r.Status().Update(ctx, &dep)
+	return ctrl.Result{}, err
+}
+
+func (r *MarkdownViewReconciler) Reconcile_deleteWithPreConditions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var deploy appsv1.Deployment
+	err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &deploy)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	uid := deploy.GetUID()
+	resourceVersion := deploy.GetResourceVersion()
+	cond := metav1.Preconditions{
+		UID:             &uid,
+		ResourceVersion: &resourceVersion,
+	}
+	err = r.Delete(ctx, &deploy, &client.DeleteOptions{
+		Preconditions: &cond,
+	})
+	return ctrl.Result{}, err
+}
+
+func (r *MarkdownViewReconciler) Reconcile_deleteAllOfDeployment(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	err := r.DeleteAllOf(ctx, &appsv1.Deployment{}, client.InNamespace("default"))
+	return ctrl.Result{}, err
+}
