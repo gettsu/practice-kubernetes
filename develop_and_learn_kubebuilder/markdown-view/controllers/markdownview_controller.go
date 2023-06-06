@@ -56,7 +56,6 @@ type MarkdownViewReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=events,verbs=create;update;patch
 // ! [rbac]
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -106,7 +105,7 @@ func (r *MarkdownViewReconciler) reconcileConfigMap(ctx context.Context, mdView 
 
 	cm := &corev1.ConfigMap{}
 	cm.SetNamespace(mdView.Namespace)
-	cm.SetName(mdView.Name)
+	cm.SetName("markdowns-" + mdView.Name)
 
 	op, err := ctrl.CreateOrUpdate(ctx, r.Client, cm, func() error {
 		if cm.Data == nil {
