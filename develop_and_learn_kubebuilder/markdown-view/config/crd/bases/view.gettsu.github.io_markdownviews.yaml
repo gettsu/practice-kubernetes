@@ -42,7 +42,7 @@ spec:
           spec:
             description: MarkdownViewSpec defines the desired state of MarkdownView
             properties:
-              markdown:
+              markdowns:
                 additionalProperties:
                   type: string
                 minProperties: 1

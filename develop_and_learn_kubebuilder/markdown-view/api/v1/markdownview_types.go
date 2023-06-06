@@ -30,7 +30,7 @@ type MarkdownViewSpec struct {
 
 	//+kubebuilder:validation:Required
 	//+kubebuilder:validation:MinProperties=1
-	Markdowns map[string]string `json:"markdown,omitempty"`
+	Markdowns map[string]string `json:"markdowns,omitempty"`
 
 	// Replicas is the number of viewers.
 	// +kubebuilder:default=1
@@ -48,7 +48,7 @@ type MarkdownViewStatus string
 
 const (
 	MarkdownViewNotReady  = MarkdownViewStatus("NotReady")
-	MarkdownviewAvailable = MarkdownViewStatus("Available")
+	MarkdownViewAvailable = MarkdownViewStatus("Available")
 	MarkdownViewHealthy   = MarkdownViewStatus("Healthy")
 )
 
